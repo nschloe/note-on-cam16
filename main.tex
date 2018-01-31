@@ -1,0 +1,82 @@
+\documentclass{scrartcl}
+
+\title{Some notes on the CIECAM02 and CAM16 color models}
+\author{Nico Schlömer}
+
+\begin{document}
+
+\maketitle
+\begin{abstract}
+  The CIECAM02 color model \cite{} was revised in 2016 \cite{}, mainly to
+  eliminate one particular mathematical breakdown. Some little inconsistencies
+  however have survived the update. This note points them out in the hope that
+  the next revision will be cleaned up in this respect.
+\end{abstract}
+
+
+\section{Description of the algorithm}
+
+For the sake of completeness, the section repeats the CAM16 color model as it
+originally appears in \cite{}.
+
+\subsection{Forward model}
+
+\subsection{backward model}
+
+
+\section{Possible improvements}
+
+All improvements listed here do not change the outcome of the model.  They are
+merely algorithmic improvements that leads to simplified implementations.
+
+\begin{itemize}
+
+\item Step 3 in the forward model can take profit from the sign definition of
+step 5 of the backward model  One expression instead of two.
+
+\item Step 5 in the forward model is written down too complicated. Use the same
+grammar as in step 1-3 of the backward model
+
+\item
+In both CAM02 and CAM16, the inverse model's step 3 is unecessarily complex.
+Instead of discriminating between $t=0$ and $t>0$ to avoid a division by $0$
+in $p_1$, one can simply perform all computations with the inverse of $p_1$,
+\[
+\tilde{p}_1 = t e_t \frac{13}{50000} N_c N_{cb}.
+\]
+This leads to a simpler representation of $a$ and $b$.
+\end{itemize}
+
+
+\section{}
+On Encoding Color Difference Signals for High Dynamic Range and Wide Gamut
+Imagery and derivative articles like Perceptually uniform color space for image
+signals including high dynamic range and wide gamut:
+
+It says there about matrix $M_1$:
+
+> For matrix M1 the signal
+> range for !, ! and ! should remain equal to the range of the input
+> RGB because the nonlinear conversion function is only defined for
+> zero to ten thousand. Thus the sum of the coefficients in each row
+> of matrix !! must equal one.
+
+Their final matrix is
+
+0.37613 0.70431 −0.05675
+−0.21649 1.14744 0.05356
+0.02567 0.16713 0.74235
+
+However, to assert that the output signal is also in the range of 0 and 10000,
+there can be no negative entries. This requirement has been forgotten.
+
+Proof:
+If any $M_{i_0, j_0}<0$, then chose
+$x$ with $x_j={1 if j=j_0, 0 otherwise}$. Then $(Mx)_{i_0} = M_{i_0, j_0} x_j
+=M_{i_0, j_0} < 0$. Hence, there cannot be negative entries.
+
+To maximize entry in $(Mx)_i$, one must choose $x=x_{max} (1,1,1)$. Then
+$(Mx)_i = \sum_j M_{i, j} x_{max} \le! x_{max}$, hence $\sum_j M_{i, j} \le!
+1$, i.e., the sum of each row of $M$ can at most be $1$.
+
+\end{document}

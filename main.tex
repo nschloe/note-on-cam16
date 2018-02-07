@@ -96,12 +96,12 @@ only in step 9.
 \subsection{Step 9, forward model}
 
 The saturation is currently computed as
-\paragraph{Step 9}{%
-  Step 9: Calculate the correlates of [\dots] saturation ($s$).
+\begin{step}[9]
+  Calculate the correlates of [\dots] saturation ($s$).
   \[
-    s \coloneqq 100 \sqrt{M/Q}
+    s \coloneqq 100 \sqrt{M/Q}.
   \]
-}
+\end{step}
 This breaks down if $Q=0$, a value only occuring if the input values are
 $X=Y=Z=0$. When making use of the definition of $M$ and $Q$, one gets to an
 expression for $s$ that does is well-defined in all cases:
@@ -109,21 +109,22 @@ expression for $s$ that does is well-defined in all cases:
   s \coloneqq 50 \sqrt{\frac{c t^{0.9} {(1.64-0.29)}^{0.73}}{A_w + 4}}.
 \]
 
-% \item Step 5 in the forward model is written down too complicated. Use the same
-% grammar as in step 1-3 of the backward model
 
 \subsection{Steps 2 and 3, backward model}
 
-\paragraph{Step 2}{Calculate $t$, $e_t$, $p_1$, $p_2$, and $p_3$.
+\begin{step}[2]
+Calculate $t$, $e_t$, $p_1$, $p_2$, and $p_3$.
 \begin{align*}
   t &= {\left(\frac{C}{\sqrt{\frac{J}{100}} {(1.64 - 0.29^n)}^{0.73}}\right)}^\frac{1}{0.9},\\
   e_t &= \tfrac{1}{4} \left[\cos(h'\pi/180\degree + 2) + 3.8\right],\\
   p_1 &= \tfrac{50000}{13} N_c N_{cb} e_t \frac{1}{t},\\
   p_2 &= \frac{A}{N_{bb}} + 0.305,\\
   p_3 &= \tfrac{21}{20}.
-\end{align*}}%
+\end{align*}
+\end{step}
 
-\paragraph{Step 3}{Calculate $a$ and $b$.
+\begin{step}[3]
+Calculate $a$ and $b$.
 If $t=0$, then $a=b=0$ and go to Step 4.
 In next computations be transform $h$ from degrees to radians
 before calculating $\sin(h)$ and $\cos(h)$:
@@ -142,7 +143,8 @@ If $\abs{\cos(h)} > \abs{\sin(h)}$ then
     \left(\frac{27}{1403}  - p_3 \frac{6300}{1403}\right) \frac{\sin(h)}{\cos(h)}
   },\\
   b &= a \frac{\sin(h)}{\cos(h)}.
-\end{align*}}
+\end{align*}
+\end{step}
 
 Some of the complications in this step stem from the fact that the variable $t$
 might be $0$ in the definition of $p_1$. This happens if and only if the input
@@ -190,28 +192,32 @@ All steps that differ from the original model are marked with an asterisk (*).
 Steps 1 and 2 of CAM16 and steps 1, 2, and 3 of CIECAM02 remain as the they are.
 The
 
-\paragraph{Step 3*}{%
+\begin{step}[3*]
 Calculate the modified postadaptation cone response
 (resulting in dynamic range compression).
 \[
-  R'_a = 400 \sign{R_c} \left(\frac{\left(\frac{F_L \abs{R_c}}{100}\right)^{0.42}}{\left(\frac{F_L \abs{R_c}}{100}\right)^{0.42} + 27.13}\right)
+  R'_a = 400 \sign{R_c} \left(
+    \frac
+    {{\left(\frac{F_L \abs{R_c}}{100}\right)}^{0.42}}
+    {{\left(\frac{F_L \abs{R_c}}{100}\right)}^{0.42} + 27.13}
+    \right)
 \]
-and similarly for the computations of $G'_a$ and $B'_a$.
-}
+and likewise for $G'_a$ and $B'_a$.
+\end{step}
 
-\paragraph{Step 4}{%
-  Calculate Redness--Greenness ($a$), Yellowness--Blueness ($b$) components,
-  and hue angle ($h$):
-  \begin{align*}
-    a&\coloneqq R'_a - \tfrac{12}{11} G'_a + \tfrac{1}{11} B'_a\\
-    b&\coloneqq \tfrac{1}{9} R'_a + \tfrac{1}{9} G'_a - \tfrac{2}{9} B'_a\\
-    h&\coloneqq \arctan(b/a).
-  \end{align*}
-  (Make sure that $h$ is between $0\degree$ and $360\degree$.)
-}
+\begin{step}[4]
+Calculate Redness--Greenness ($a$), Yellowness--Blueness ($b$) components,
+and hue angle ($h$):
+\begin{align*}
+  a&\coloneqq R'_a - \tfrac{12}{11} G'_a + \tfrac{1}{11} B'_a\\
+  b&\coloneqq \tfrac{1}{9} R'_a + \tfrac{1}{9} G'_a - \tfrac{2}{9} B'_a\\
+  h&\coloneqq \arctan(b/a).
+\end{align*}
+(Make sure that $h$ is between $0\degree$ and $360\degree$.)
+\end{step}
 
-\paragraph{Step 5}{%
-  Calculate eccentricity [$e_t$, hue quadrature composition
+\begin{step}[5]
+Calculate eccentricity [$e_t$, hue quadrature composition
 ($H$) and hue composition ($H_c$)].
 
 Using the following unique hue data in Table A2, set
@@ -230,34 +236,34 @@ in table A.2.
 Hue quadrature is computed using the formula
 \[
   H = H_i + \frac{100 e_{i+1} (h'-h_i)}{e_{i+1}(h'-h_i) + e_i (h_{i+1}-h')}
-  \]
+\]
 and hue composition $H_c$ is computed according to $H$. % TODO
-  }
+\end{step}
 
-\paragraph{Step 6*}{%
+\begin{step}[6*]
 Calculate achromatic response $A$
 \[
   A\coloneqq (2 R'_a + G'_a + \tfrac{1}{20} B'_a) \cdot N_{bb}
   \]
-}
+\end{step}
 
-\paragraph{Step 7}{%
+\begin{step}[7]
 Calculate the correlate of lightness $J$
 \[
   J \coloneqq 100 {(A / A_w)}^{cz}
   \]
-}
+\end{step}
 
-\paragraph{Step 8}{%
+\begin{step}[8]
   Calculate the correlate of brightness $Q$
   \[
     Q \coloneqq \frac{4}{c} \sqrt{\frac{J}{100}} (A_w+4) F_L^{0.25}
     \]
-  }
+\end{step}
 
-\paragraph{Step 9*}{%
-Calculate the correlates of chroma ($C$), colorfulness
-($M$), and saturation ($s$).
+\begin{step}[9*]
+Calculate the correlates of chroma ($C$), colorfulness ($M$), and saturation
+  ($s$).
 \begin{align*}
   t&\coloneqq \frac{50000/13 N_c N_{cb} e_t \sqrt{a^2 + b^2}}{R'_a + G'_a + 21/20 B'_a + 0.305},\\
   \alpha&\coloneqq t^{0.9} \cdot {(1.64 - 0.29^n)}^{0.73},\\
@@ -265,32 +271,29 @@ Calculate the correlates of chroma ($C$), colorfulness
   M&\coloneqq C\cdot F_L^{0.25},\\
   s &\coloneqq 50 \sqrt{\frac{\alpha c}{A_w + 4}}.
 \end{align*}
-  }
-
+\end{step}
 
 \subsection{Backward model}
 
-\paragraph{Step 1}{%
+\begin{step}[1]
   Obtain $J$, $C$; and $h$ from $H$, $Q$, $M$, $s$.
 
   The input data can be different combinations of perceived correlates, that
   is, $J$ or $Q$; $C$, $M$, or $s$; and $H$ or $h$. Hence the following
   sub-steps are needed to convert the input parameters to the parameters $J$,
   $C$, and $h$.
-  }
+\end{step}
 
+\begin{step}[1--1]
+Compute $J$ from $Q$ (if input is $Q$)
+\[
+  J\coloneqq 6.25 \left(\frac{cQ}{(A_w+4) F_L^{0.25}}\right).
+\]
+\end{step}
 
-\paragraph{Step 1--1}{%
-  Compute $J$ from $Q$ (if input is $Q$)
-  \[
-    J\coloneqq 6.25 \left(\frac{cQ}{(A_w+4) F_L^{0.25}}\right).
-    \]}
-
-\paragraph{Step 1--2*}{%
+\begin{step}[1--2*]
 Calculate $t$ from $C$, $M$, or $s$.
-
 \begin{itemize}
-
   \item If input is $C$ or $M$:
     \begin{itemize}
       \item $C\coloneqq M / F_L^{0.25}$ if input is $M$
@@ -308,55 +311,52 @@ Compute $t$ from $\alpha$:
 \[
   t \coloneqq {\left(\frac{\alpha}{{(1.64 - 0.29^n)}^{0.73}}\right)}^{1/0.9}
 \]
-}
+\end{step}
 
-\paragraph{Step 1--3}{%
+\begin{step}[1--3]
 % TODO
   Calculate $h$ from $H$ (if input is $H$)
-}
+\end{step}
 
-\paragraph{Step 2*}{%
+\begin{step}[2*]
 Calculate $e_t$, $A$, $p'_1$, and $p'_2$
 \begin{align*}
   e_t &= \tfrac{1}{4} (\cos(h\pi/180\degree + 2) + 3.8),\\
   A &= A_w  {(J/100)}^{1/(cz)},\\
   p'_1 &= e_t \tfrac{50000}{13} N_c N_{cb},\\
   p'_2 &= A / N_{bb}.
-\end{align*}}
-\paragraph{Step 3*}{%
+\end{align*}
+\end{step}
+
+\begin{step}[3*]
 Calculate $a$ and $b$
   \begin{align*}
     \gamma &\coloneqq \frac{23 (p'_2+0.305) t}{23 p'_1 + 11 t \cos(h) + 108 t \sin(h)},\\
     a &\coloneqq \gamma \cos(h),\\
     b &\coloneqq \gamma \sin(h).
-  \end{align*}}
+  \end{align*}
+\end{step}
 
-\paragraph{Step 4}{%
+\begin{step}[4]
   Calculate $R'_a$, $G'_a$, and $B'_a$.
   \begin{align*}
     R'_a &= (460 p'_2 + 451 a + 288 b) / 1403,\\
     G'_a &= (460 p'_2 - 891 a - 261 b) / 1403,\\
     B'_a &= (460 p'_2 - 220 a - 6300 b) / 1403.
   \end{align*}%
-  }
+\end{step}
 
-\paragraph{Step 5*}{%
-  Calculate $R_c$, $G_c$, and $B_c$.
-  \[
-    R_c = \sign(R'_a) \frac{100}{F_L} {\left(\frac{27.13 \abs{R'_a}}{400 - \abs{R'_a}}\right)}^{\frac{1}{0.42}},
-  \]
-and likewise for $G_c$, $B_c$.}
+\begin{step}[5*]
+Calculate $R_c$, $G_c$, and $B_c$.
+\[
+  R_c = \sign(R'_a) \frac{100}{F_L} {\left(
+    \frac{27.13 \abs{R'_a}}{400 - \abs{R'_a}}
+    \right)}^{\frac{1}{0.42}}
+\]
+and likewise for $G_c$, $B_c$.
+\end{step}
 
 
-
-% \item
-% In both CAM02 and CAM16, the inverse model's step 3 is unecessarily complex.
-% Instead of discriminating between $t=0$ and $t>0$ to avoid a division by $0$
-% in $p_1$, one can simply perform all computations with the inverse of $p_1$,
-% \[
-% \tilde{p}_1 = t e_t \frac{13}{50000} N_c N_{cb}.
-% \]
-% This leads to a simpler representation of $a$ and $b$.
 
 
 % \section{}

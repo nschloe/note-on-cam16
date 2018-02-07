@@ -1,4 +1,40 @@
-\documentclass{scrartcl}
+\documentclass[twocolumn]{scrartcl}
+
+\usepackage{microtype}
+\usepackage{mathtools}
+
+% <https://tex.stackexchange.com/a/43009/13262>
+\DeclarePairedDelimiter\abs{\lvert}{\rvert}%
+
+
+\usepackage[T1]{fontenc}
+% \usepackage{times}
+\usepackage{newtxtext}
+% \usepackage{newtxmath}
+% \usepackage{mathptmx}
+% \usepackage[scaled=.90]{helvet}
+% \usepackage{courier}
+
+% degree symbol
+\usepackage{gensymb}
+
+% <https://tex.stackexchange.com/a/413899/13262>
+\usepackage{etoolbox}
+\makeatletter
+\long\def\etb@listitem#1#2{%
+  \expandafter\ifblank\expandafter{\@gobble#2}
+    {}
+    {\expandafter\etb@listitem@i
+     \expandafter{\@secondoftwo#2}{#1}}}
+\long\def\etb@listitem@i#1#2{#2{#1}}
+\makeatother
+\usepackage{biblatex}
+\bibliography{bib}
+
+\usepackage{amsmath}
+\DeclareMathOperator{\sign}{sign}
+
+\usepackage{algorithm2e}
 
 \title{Some notes on the CIECAM02 and CAM16 color models}
 \author{Nico Schlömer}
@@ -7,76 +43,375 @@
 
 \maketitle
 \begin{abstract}
-  The CIECAM02 color model \cite{} was revised in 2016 \cite{}, mainly to
-  eliminate one particular mathematical breakdown. Some little inconsistencies
-  however have survived the update. This note points them out in the hope that
-  the next revision will be cleaned up in this respect.
+  The CIECAM02 color appearance model~\cite{ciecam02} has attracted much
+  attention, but it was quickly discovered that it breaks down for certain
+  input values. Some articles have since been published trying to fix the
+  breakdown, most recently 2016~\cite{cam16}. The algorithm still contains some
+  flaws, however. This article suggests some improvement that lead that do not
+  change the algorithm algebraically, but make it shorter and remove some edge
+  cases in which the current algorithm would still break down.
 \end{abstract}
 
 
-\section{Description of the algorithm}
+% \section{Description of the algorithm}
+%
+% For the sake of completeness, the section repeats the CAM16 color model as it
+% originally appears in \cite{}.
+%
+% \subsection{Forward model}
+%
+% \subsection{backward model}
 
-For the sake of completeness, the section repeats the CAM16 color model as it
-originally appears in \cite{}.
-
-\subsection{Forward model}
-
-\subsection{backward model}
-
-
-\section{Possible improvements}
+\section{Suggested improvements}
 
 All improvements listed here do not change the outcome of the model.  They are
 merely algorithmic improvements that leads to simplified implementations.
 
-\begin{itemize}
+\subsection{Step 3, forward model}
 
-\item Step 3 in the forward model can take profit from the sign definition of
-step 5 of the backward model  One expression instead of two.
+Step 3 of the forward model reads
 
-\item Step 5 in the forward model is written down too complicated. Use the same
-grammar as in step 1-3 of the backward model
-
-\item
-In both CAM02 and CAM16, the inverse model's step 3 is unecessarily complex.
-Instead of discriminating between $t=0$ and $t>0$ to avoid a division by $0$
-in $p_1$, one can simply perform all computations with the inverse of $p_1$,
+\paragraph{Step 3}{%
+Calculate the postadaptation cone response
+(resulting in dynamic range compression).
 \[
-\tilde{p}_1 = t e_t \frac{13}{50000} N_c N_{cb}.
+  R_a = 400 \left(\frac{\left(\frac{F_L R_c}{100}\right)^{0.42}}{\left(\frac{F_L R_c}{100}\right)^{0.42} + 27.13}\right) + 0.1
 \]
-This leads to a simpler representation of $a$ and $b$.
-\end{itemize}
+If $R_c$ is negative, then
+\[
+  R_a = -400 \left(\frac{\left(\frac{-F_L R_c}{100}\right)^{0.42}}{\left(\frac{-F_L R_c}{100}\right)^{0.42} + 27.13}\right) + 0.1
+\]
+and similarly for the computations of $G_a$ and $B_a$.
+}
+
+If the $\sign$ operator is used here as it is used later in step 5 of the
+backward model, the above description can be shortened.
+Furthermore, the term $0.1$ is added here, but in all of the following steps in
+which $\{R,G,B\}_a$ is used -- except the computation of $t$ in step 9 --, it
+cancels out or is subtracted again. It is hence suggested to include the term
+only in step 9.
+
+\paragraph{Step 3, revised}{%
+Calculate the modified postadaptation cone response
+(resulting in dynamic range compression).
+\[
+  R'_a = 400 \sign{R_c} \left(\frac{\left(\frac{F_L \abs{R_c}}{100}\right)^{0.42}}{\left(\frac{F_L \abs{R_c}}{100}\right)^{0.42} + 27.13}\right)
+\]
+and similarly for the computations of $G_a$ and $B_a$.
+}
+
+\subsection{Step 9, forward model}
+
+The saturation is currently computed as
+\paragraph{Step 9}{%
+  Step 9: Calculate the correlates of [\dots] saturation ($s$).
+  \[
+    s \coloneqq 100 \sqrt{M/Q}
+  \]
+}
+This breaks down if $Q=0$, a value only occuring if the input values are
+$X=Y=Z=0$. When making use of the definition of $M$ and $Q$, one gets to an
+expression for $s$ that does is well-defined in all cases:
+\paragraph{Step 9, revised}{%
+  Step 9: Calculate the correlates of [\dots] saturation ($s$).
+  \begin{align*}
+    \alpha &\coloneqq t^{0.9} {(1.64-0.29)}^{0.73},\\
+    C &\coloneqq \alpha \sqrt{J/100},\\
+    s &\coloneqq 50 \sqrt{\frac{\alpha c}{A_w + 4}}.
+  \end{align*}
+}
+
+% \item Step 5 in the forward model is written down too complicated. Use the same
+% grammar as in step 1-3 of the backward model
+
+\subsection{Steps 2 and 3, backward model}
+
+\paragraph{Step 2 (part)}{Calculate $t$, $p_1$.
+\begin{align*}
+  t &= {\left(\frac{C}{\sqrt{\frac{J}{100}} {(1.64 - 0.29^n)}^{0.73}}\right)}^\frac{1}{0.9}\\
+  p_1 &= \frac{50000}{13} N_c N_{cb} e_t \frac{1}{t}
+\end{align*}
+}
+
+\paragraph{Step 3}{Calculate $a$ and $b$.
+If $t=0$, then $a=b=0$ and go to Step 4.
+In next computations be transform $h$ from degrees to radians
+before calculating $\sin h$ and $\cos h$:
+If $\abs{\sin(h)} \ge \abs{\cos(h)}$ then
+\begin{align*}
+  p_4 &= \frac{p_1}{\sin h},\\
+  b &= \frac{p_2 (2+p_3) \frac{460}{1403}}{p_4 + (2+p_3) \frac{220}{1403} \frac{\cos h}{\sin h} - \frac{27}{1403} + p_3 \frac{6300}{1403}},\\
+  a &= b \frac{\cos h}{\sin h}.
+\end{align*}
+If $\abs{\cos(h)} > \abs{\sin(h)}$ then
+\begin{align*}
+  p_5 &= \frac{p_1}{\cos h},\\
+  a &= \frac{p_2 (2+p_3) \frac{460}{1403}}{%
+    p_5
+    + (2+p_3) \frac{220}{1403} -
+    \left(\frac{27}{1403}  - p_3 \frac{6300}{1403}\right) \frac{\sin h}{\cos h}
+  },\\
+  b &= a \frac{\sin h}{\cos h}.
+\end{align*}
+}
+
+Many of the complications in this step stem from the fact that the variable $t$
+might be $0$ in the definition of $p_1$. This happens if and only if the input
+parameter $C$ is $0$.
+
+One can instead perform the computation without dividing by $t$,
+\[
+  p'_1 = \frac{50000}{13} N_c N_{cb} e_t
+\]
+In the case $\abs{\sin(h)} \ge \abs{\cos(h)}$, this leads to
+\begin{align*}
+  p'_4 &= \frac{p'_1}{\sin h},\\
+  b &= \frac{p_2 (2+p_3) \frac{460}{1403}}{\frac{p'_4}{t} + (2+p_3) \frac{220}{1403} \frac{\cos h}{\sin h} - \frac{27}{1403} + p_3 \frac{6300}{1403}}\\
+   &= \frac{t \sin(h) p_2 (2+p_3) \frac{460}{1403}}{p'_1 + t (2+p_3) \frac{220}{1403} \cos h + t \sin(h) \frac{6588}{1403}}\\
+   &= \frac{23 t \sin(h) p_2}{23 p'_1 + 11 t \cos(h) + 108 t \sin(h)},\\
+  a &= \frac{23 t \cos(h) p_2}{23 p'_1 + 11 t \cos(h) + 108 t \sin(h)}.
+\end{align*}
+Interestingly, the exact same results are retrieved in the case $\abs{\cos(h)}
+> \abs{\sin(h)}$. Moreover, these expressions for $a$ and $b$ are well-defined
+even in the case of $t=0$.
+A numerical break-down only occurs if
+\begin{align*}
+ 0 &= 23 p'_1 + 11 t \cos(h) + 108 t \sin(h)\\
+   &= 23 p'_1 + t \sqrt{11785} \sin\left(h + \arctan\frac{11}{108}\right),
+\end{align*}
+% i.e.,
+% \[
+%   h + \arctan(11/108) = \arcsin\left(\frac{23p'_1}{\right)
+% \]
 
 
-\section{}
-On Encoding Color Difference Signals for High Dynamic Range and Wide Gamut
-Imagery and derivative articles like Perceptually uniform color space for image
-signals including high dynamic range and wide gamut:
+Together, this can be formulated asg
 
-It says there about matrix $M_1$:
+\paragraph{Step 2 (part, revised)}{Calculate $t$, $\tilde{p}_1$.
+\begin{align*}
+  t &= \left(\frac{C}{\sqrt{\frac{J}{100}} {(1.64 - 0.29^n)}^{0.73}}\right)^\frac{1}{0.9}\\
+  \tilde{p}_1 &= \frac{13 t}{50000 N_c N_{cb} e_t}
+\end{align*}
+}
+\paragraph{Step 3, revised}{Calculate $a$ and $b$.
+In the next computations, remember to transform $h$ from degrees to radians
+when calculating $\sin(h)$ and $\cos(h)$.
+\begin{align*}
+  a &= \frac{23 t \cos(h) p_2}{23 p'_1 + 11 t \cos(h) + 108 t \sin(h)},\\
+  b &= \frac{23 t \sin(h) p_2}{23 p'_1 + 11 t \cos(h) + 108 t \sin(h)}.
+\end{align*}}
 
-> For matrix M1 the signal
-> range for !, ! and ! should remain equal to the range of the input
-> RGB because the nonlinear conversion function is only defined for
-> zero to ten thousand. Thus the sum of the coefficients in each row
-> of matrix !! must equal one.
+\section{Full model}
 
-Their final matrix is
+All steps that differ from the original model are marked with an asterisk (*).
 
-0.37613 0.70431 −0.05675
-−0.21649 1.14744 0.05356
-0.02567 0.16713 0.74235
+\subsection{Forward model}
 
-However, to assert that the output signal is also in the range of 0 and 10000,
-there can be no negative entries. This requirement has been forgotten.
+Steps 1 and 2 of CAM16 and steps 1, 2, and 3 of CIECAM02 remain as the they are.
+The
 
-Proof:
-If any $M_{i_0, j_0}<0$, then chose
-$x$ with $x_j={1 if j=j_0, 0 otherwise}$. Then $(Mx)_{i_0} = M_{i_0, j_0} x_j
-=M_{i_0, j_0} < 0$. Hence, there cannot be negative entries.
+\paragraph{Step 3*}{%
+Calculate the modified postadaptation cone response
+(resulting in dynamic range compression).
+\[
+  R'_a = 400 \sign{R_c} \left(\frac{\left(\frac{F_L \abs{R_c}}{100}\right)^{0.42}}{\left(\frac{F_L \abs{R_c}}{100}\right)^{0.42} + 27.13}\right)
+\]
+and similarly for the computations of $G'_a$ and $B'_a$.
+}
 
-To maximize entry in $(Mx)_i$, one must choose $x=x_{max} (1,1,1)$. Then
-$(Mx)_i = \sum_j M_{i, j} x_{max} \le! x_{max}$, hence $\sum_j M_{i, j} \le!
-1$, i.e., the sum of each row of $M$ can at most be $1$.
+\paragraph{Step 4}{%
+  Calculate Redness--Greenness ($a$), Yellowness--Blueness ($b$) components,
+  and hue angle ($h$):
+  \begin{align*}
+    a&\coloneqq R'_a - \frac{12}{11} G'_a + \frac{1}{11} B'_a\\
+    b&\coloneqq \frac{1}{9} R'_a + \frac{1}{9} G'_a - \frac{2}{9} B'_a\\
+    h&\coloneqq \arctan(b/a).
+  \end{align*}
+  (Make sure that $h$ is between $0\degree$ and $360\degree$.)
+}
+
+\paragraph{Step 5}{%
+  Calculate eccentricity [$e_t$, hue quadrature composition
+($H$) and hue composition ($H_c$)].
+
+Using the following unique hue data in Table A2, set
+$h'= h + 360\degree$ if $h < h_1$, otherwise $h'=h$.
+Choose a proper $i\in\{1,2,3,4\}$ so that $h_i\le h' < h_{i+1}$.
+Calculate
+\[
+  e_t = \frac{1}{4}
+  \left[
+    \cos(h'\pi/180\degree + 2) + 3.8
+  \right]
+\]
+which is close to, but not exactly the same as, the eccentricity factor given
+in table A.2.
+
+Hue quadrature is computed using the formula
+\[
+  H = H_i + \frac{100 e_{i+1} (h'-h_i)}{e_{i+1}(h'-h_i) + e_i (h_{i+1}-h')}
+  \]
+and hue composition $H_c$ is computed according to $H$. % TODO
+  }
+
+\paragraph{Step 6*}{%
+Calculate achromatic response $A$
+\[
+  A\coloneqq (2 R'_a + G'_a + \tfrac{1}{20} B'_a) \cdot N_{bb}
+  \]
+}
+
+\paragraph{Step 7}{%
+Calculate the correlate of lightness $J$
+\[
+  J \coloneqq 100 {(A / A_w)}^{cz}
+  \]
+}
+
+\paragraph{Step 8}{%
+  Calculate the correlate of brightness $Q$
+  \[
+    Q \coloneqq \frac{4}{c} \sqrt{\frac{J}{100}} (A_w+4) F_L^{0.25}
+    \]
+  }
+
+\paragraph{Step 9*}{%
+Calculate the correlates of chroma ($C$), colorfulness
+($M$), and saturation ($s$).
+\begin{align*}
+  t&\coloneqq \frac{50000/13 N_c N_{cb} e_t \sqrt{a^2 + b^2}}{R'_a + G'_a + 21/20 B'_a + 0.305},\\
+  \alpha&\coloneqq t^{0.9} \cdot {(1.64 - 0.29^n)}^{0.73},\\
+  C&\coloneqq \alpha \sqrt{\frac{J}{100}},\\
+  M&\coloneqq C\cdot F_L^{0.25},\\
+  s &\coloneqq 50 \sqrt{\frac{\alpha c}{A_w + 4}}.
+\end{align*}
+  }
+
+
+\subsection{Backward model}
+
+\paragraph{Step 1}{%
+  Obtain $J$, $C$; and $h$ from $H$, $Q$, $M$, $s$.
+
+  The input data can be different combinations of perceived correlates, that
+  is, $J$ or $Q$; $C$, $M$, or $s$; and $H$ or $h$. Hence the following
+  sub-steps are needed to convert the input parameters to the parameters $J$,
+  $C$, and $h$.
+  }
+
+
+\paragraph{Step 1--1}{%
+  Compute $J$ from $Q$ (if input is $Q$)
+  \[
+    J\coloneqq 6.25 \left(\frac{cQ}{(A_w+4) F_L^{0.25}}\right).
+    \]}
+
+\paragraph{Step 1--2*}{%
+Calculate $t$ from $C$, $M$, or $s$.
+
+% \begin{algorithm}[H]
+%   \eIf{input is $C$ or $M$}{%
+%     \If{input is $M$}{%
+%       $C\coloneqq M / F_L^{0.25}$
+%   }
+%     \eIf{$J=0$}{%
+%       $\alpha\coloneqq 0$
+%       }{%
+%       $\alpha \coloneqq \frac{C}{\sqrt{J/100}}$
+% }}{%
+%     input is $s$\;
+%     $\alpha \coloneqq {\left(\frac{s}{50}\right)}^2 \frac{A_w+4}{c}$
+% }
+% \end{algorithm}
+
+\[
+  t \coloneqq {\left(\frac{\alpha}{{(1.64 - 0.29^n)}^{0.73}}\right)}^{1/0.9}
+\]
+}
+
+\paragraph{Step 1--3}{%
+% TODO
+  Calculate $h$ from $H$ (if input is $H$)
+}
+
+\paragraph{Step 2*}{%
+Calculate $e_t$, $A$, $p'_1$, and $p'_2$
+
+\begin{align*}
+  e_t &= 0.25 (\cos(h\pi/180\degree + 2) + 3.8),\\
+  A &= A_w  {(J/100)}^{1/(cz)},\\
+  p'_1 &= e_t \frac{50000}{13} N_c N_{cb},\\
+  p'_2 &= A / N_{bb}.
+\end{align*}
+}
+
+\paragraph{Step 3*}{%
+Calculate $a$ and $b$
+  \begin{align*}
+    \gamma &\coloneqq \frac{23 (p'_2+0.305) t}{23 p'_1 + 11 t \cos(h) + 108 t \sin(h)},\\
+    a &\coloneqq \gamma \cos(h),\\
+    b &\coloneqq \gamma \sin(h).
+  \end{align*}}
+
+\paragraph{Step 4}{%
+  Calculate $R'_a$, $G'_a$, and $B'_a$.
+  \begin{align*}
+    R'_a &= (460 p'_2 + 451 a + 288 b) / 1403,\\
+    G'_a &= (460 p'_2 - 891 a - 261 b) / 1403,\\
+    B'_a &= (460 p'_2 - 220 a - 6300 b) / 1403.
+  \end{align*}%
+  }
+
+\paragraph{Step 5*}{%
+  Calculate $R_c$, $G_c$, and $B_c$.
+  \[
+    R_c = \sign(R'_a) \frac{100}{F_L} {\left(\frac{27.13 \abs{R'_a}}{400 - \abs{R'_a}}\right)}^{\frac{1}{0.42}},
+  \]
+and likewise for $G_c$, $B_c$.}
+
+
+
+% \item
+% In both CAM02 and CAM16, the inverse model's step 3 is unecessarily complex.
+% Instead of discriminating between $t=0$ and $t>0$ to avoid a division by $0$
+% in $p_1$, one can simply perform all computations with the inverse of $p_1$,
+% \[
+% \tilde{p}_1 = t e_t \frac{13}{50000} N_c N_{cb}.
+% \]
+% This leads to a simpler representation of $a$ and $b$.
+
+
+% \section{}
+% On Encoding Color Difference Signals for High Dynamic Range and Wide Gamut
+% Imagery and derivative articles like Perceptually uniform color space for image
+% signals including high dynamic range and wide gamut:
+%
+% It says there about matrix $M_1$:
+%
+% > For matrix M1 the signal
+% > range for !, ! and ! should remain equal to the range of the input
+% > RGB because the nonlinear conversion function is only defined for
+% > zero to ten thousand. Thus the sum of the coefficients in each row
+% > of matrix !! must equal one.
+%
+% Their final matrix is
+%
+% 0.37613 0.70431 −0.05675
+% −0.21649 1.14744 0.05356
+% 0.02567 0.16713 0.74235
+%
+% However, to assert that the output signal is also in the range of 0 and 10000,
+% there can be no negative entries. This requirement has been forgotten.
+%
+% Proof:
+% If any $M_{i_0, j_0}<0$, then chose
+% $x$ with $x_j={1 if j=j_0, 0 otherwise}$. Then $(Mx)_{i_0} = M_{i_0, j_0} x_j
+% =M_{i_0, j_0} < 0$. Hence, there cannot be negative entries.
+%
+% To maximize entry in $(Mx)_i$, one must choose $x=x_{max} (1,1,1)$. Then
+% $(Mx)_i = \sum_j M_{i, j} x_{max} \le! x_{max}$, hence $\sum_j M_{i, j} \le!
+% 1$, i.e., the sum of each row of $M$ can at most be $1$.
+
+\printbibliography
 
 \end{document}

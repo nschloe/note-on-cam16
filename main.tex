@@ -1,19 +1,15 @@
 \documentclass[twocolumn]{scrartcl}
 
 \usepackage{microtype}
+\usepackage{amsmath}
 \usepackage{mathtools}
 
 % <https://tex.stackexchange.com/a/43009/13262>
 \DeclarePairedDelimiter\abs{\lvert}{\rvert}%
 
-
 \usepackage[T1]{fontenc}
-% \usepackage{times}
 \usepackage{newtxtext}
-% \usepackage{newtxmath}
-% \usepackage{mathptmx}
-% \usepackage[scaled=.90]{helvet}
-% \usepackage{courier}
+\usepackage{newtxmath}
 
 % degree symbol
 \usepackage{gensymb}
@@ -33,8 +29,6 @@
 
 \usepackage{amsmath}
 \DeclareMathOperator{\sign}{sign}
-
-\usepackage{algorithm2e}
 
 \title{Some notes on the CIECAM02 and CAM16 color models}
 \author{Nico Schlömer}
@@ -126,12 +120,12 @@ expression for $s$ that does is well-defined in all cases:
 
 \subsection{Steps 2 and 3, backward model}
 
-\paragraph{Step 2 (part)}{Calculate $t$, $p_1$.
+\paragraph{Step 2 (part)}{Calculate $t$, $p_1$, $p_2$.
 \begin{align*}
-  t &= {\left(\frac{C}{\sqrt{\frac{J}{100}} {(1.64 - 0.29^n)}^{0.73}}\right)}^\frac{1}{0.9}\\
-  p_1 &= \frac{50000}{13} N_c N_{cb} e_t \frac{1}{t}
-\end{align*}
-}
+  t &= {\left(\frac{C}{\sqrt{\frac{J}{100}} {(1.64 - 0.29^n)}^{0.73}}\right)}^\frac{1}{0.9},\\
+  p_1 &= \frac{50000}{13} N_c N_{cb} e_t \frac{1}{t},\\
+  p_2 &= \frac{A}{N_{bb}} + 0.305.
+\end{align*}}
 
 \paragraph{Step 3}{Calculate $a$ and $b$.
 If $t=0$, then $a=b=0$ and go to Step 4.
@@ -165,31 +159,37 @@ One can instead perform the computation without dividing by $t$,
 \]
 In the case $\abs{\sin(h)} \ge \abs{\cos(h)}$, this leads to
 \begin{align*}
-  p'_4 &= \frac{p'_1}{\sin h},\\
-  b &= \frac{p_2 (2+p_3) \frac{460}{1403}}{\frac{p'_4}{t} + (2+p_3) \frac{220}{1403} \frac{\cos h}{\sin h} - \frac{27}{1403} + p_3 \frac{6300}{1403}}\\
+  b &= \frac{p_2 (2+p_3) \frac{460}{1403}}{\frac{p'_1}{t\sin(h)} + (2+p_3) \frac{220}{1403} \frac{\cos h}{\sin h} - \frac{27}{1403} + p_3 \frac{6300}{1403}}\\
    &= \frac{t \sin(h) p_2 (2+p_3) \frac{460}{1403}}{p'_1 + t (2+p_3) \frac{220}{1403} \cos h + t \sin(h) \frac{6588}{1403}}\\
    &= \frac{23 t \sin(h) p_2}{23 p'_1 + 11 t \cos(h) + 108 t \sin(h)},\\
   a &= \frac{23 t \cos(h) p_2}{23 p'_1 + 11 t \cos(h) + 108 t \sin(h)}.
 \end{align*}
 Interestingly, the exact same results are retrieved in the case $\abs{\cos(h)}
-> \abs{\sin(h)}$. Moreover, these expressions for $a$ and $b$ are well-defined
-even in the case of $t=0$.
-A numerical break-down only occurs if
+> \abs{\sin(h)}$.
+It is also clear that the expressions for $a$ and $b$ are always well-defined
+when realizing that
+\begin{multline*}
+  23 p'_1 + 11 t \cos(h) + 108 t \sin(h)\\
+  = \frac{23 p'_1 p_2}{R'_a + G'_a + \tfrac{21}{20}B'_a + 0.305}.
+\end{multline*}
+
+The value of $t$ can be retrieved via $\alpha$ from the input variables.
+If the saturation correlate $s$ is given, one has
+\[
+  \alpha \coloneqq {\left(\frac{s}{50}\right)}^2 \frac{A_w+4}{c};
+\]
+if $M$ is given, compute $C\coloneqq M / F_L^{0.25}$ and then
+\[
+\alpha\coloneqq\begin{cases}
+  0 &\:\text{if $J=0$}\\
+  \frac{C}{\sqrt{J/100}}&\:\text{otherwise}.
+\end{cases}
+\]
+
+After all, steps 2 and 3 can be formulated as
+\paragraph{Step 2 (part, revised)}{Calculate $t$, $p'_1$, and $p'_2$.
 \begin{align*}
- 0 &= 23 p'_1 + 11 t \cos(h) + 108 t \sin(h)\\
-   &= 23 p'_1 + t \sqrt{11785} \sin\left(h + \arctan\frac{11}{108}\right),
-\end{align*}
-% i.e.,
-% \[
-%   h + \arctan(11/108) = \arcsin\left(\frac{23p'_1}{\right)
-% \]
-
-
-Together, this can be formulated asg
-
-\paragraph{Step 2 (part, revised)}{Calculate $t$, $\tilde{p}_1$.
-\begin{align*}
-  t &= \left(\frac{C}{\sqrt{\frac{J}{100}} {(1.64 - 0.29^n)}^{0.73}}\right)^\frac{1}{0.9}\\
+  t &= {\left(\frac{C}{\sqrt{\frac{J}{100}} {(1.64 - 0.29^n)}^{0.73}}\right)}^\frac{1}{0.9}\\w
   \tilde{p}_1 &= \frac{13 t}{50000 N_c N_{cb} e_t}
 \end{align*}
 }
@@ -223,8 +223,8 @@ and similarly for the computations of $G'_a$ and $B'_a$.
   Calculate Redness--Greenness ($a$), Yellowness--Blueness ($b$) components,
   and hue angle ($h$):
   \begin{align*}
-    a&\coloneqq R'_a - \frac{12}{11} G'_a + \frac{1}{11} B'_a\\
-    b&\coloneqq \frac{1}{9} R'_a + \frac{1}{9} G'_a - \frac{2}{9} B'_a\\
+    a&\coloneqq R'_a - \tfrac{12}{11} G'_a + \tfrac{1}{11} B'_a\\
+    b&\coloneqq \tfrac{1}{9} R'_a + \tfrac{1}{9} G'_a - \tfrac{2}{9} B'_a\\
     h&\coloneqq \arctan(b/a).
   \end{align*}
   (Make sure that $h$ is between $0\degree$ and $360\degree$.)
@@ -239,7 +239,7 @@ $h'= h + 360\degree$ if $h < h_1$, otherwise $h'=h$.
 Choose a proper $i\in\{1,2,3,4\}$ so that $h_i\le h' < h_{i+1}$.
 Calculate
 \[
-  e_t = \frac{1}{4}
+  e_t = \tfrac{1}{4}
   \left[
     \cos(h'\pi/180\degree + 2) + 3.8
   \right]
@@ -309,21 +309,22 @@ Calculate the correlates of chroma ($C$), colorfulness
 \paragraph{Step 1--2*}{%
 Calculate $t$ from $C$, $M$, or $s$.
 
-% \begin{algorithm}[H]
-%   \eIf{input is $C$ or $M$}{%
-%     \If{input is $M$}{%
-%       $C\coloneqq M / F_L^{0.25}$
-%   }
-%     \eIf{$J=0$}{%
-%       $\alpha\coloneqq 0$
-%       }{%
-%       $\alpha \coloneqq \frac{C}{\sqrt{J/100}}$
-% }}{%
-%     input is $s$\;
-%     $\alpha \coloneqq {\left(\frac{s}{50}\right)}^2 \frac{A_w+4}{c}$
-% }
-% \end{algorithm}
+\begin{itemize}
 
+  \item If input is $C$ or $M$:
+    \begin{itemize}
+      \item $C\coloneqq M / F_L^{0.25}$ if input is $M$
+      \item $\alpha\coloneqq\begin{cases}
+          0 &\:\text{if $J=0$}\\
+          \frac{C}{\sqrt{J/100}}&\:\text{otherwise}.
+      \end{cases}$
+    \end{itemize}
+  \item If input is $s$:
+    \[
+    \alpha \coloneqq {\left(\frac{s}{50}\right)}^2 \frac{A_w+4}{c}
+    \]
+\end{itemize}
+Compute $t$ from $\alpha$:
 \[
   t \coloneqq {\left(\frac{\alpha}{{(1.64 - 0.29^n)}^{0.73}}\right)}^{1/0.9}
 \]
@@ -336,15 +337,12 @@ Calculate $t$ from $C$, $M$, or $s$.
 
 \paragraph{Step 2*}{%
 Calculate $e_t$, $A$, $p'_1$, and $p'_2$
-
 \begin{align*}
-  e_t &= 0.25 (\cos(h\pi/180\degree + 2) + 3.8),\\
+  e_t &= \tfrac{1}{4} (\cos(h\pi/180\degree + 2) + 3.8),\\
   A &= A_w  {(J/100)}^{1/(cz)},\\
-  p'_1 &= e_t \frac{50000}{13} N_c N_{cb},\\
+  p'_1 &= e_t \tfrac{50000}{13} N_c N_{cb},\\
   p'_2 &= A / N_{bb}.
-\end{align*}
-}
-
+\end{align*}}
 \paragraph{Step 3*}{%
 Calculate $a$ and $b$
   \begin{align*}

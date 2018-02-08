@@ -14,6 +14,8 @@
 \usepackage{booktabs}
 \usepackage{tabularx}
 
+\usepackage{pgfplots}
+
 % <https://tex.stackexchange.com/a/43009/13262>
 \DeclarePairedDelimiter\abs{\lvert}{\rvert}%
 
@@ -54,9 +56,9 @@
   attention, but it was quickly discovered that it breaks down for certain
   input values. Some articles have since been published trying to fix the
   breakdown, most recently 2016~\cite{cam16}. The algorithm still contains some
-  flaws, however. This article suggests some improvement that lead that do not
-  change the algorithm algebraically, but make it shorter and remove some edge
-  cases in which the current algorithm would still break down.
+  flaws, however. This article suggests some improvements that do not alter the
+  algorithm algebraically, but make it shorter, more efficient, and remove some
+  edge-case breakdowns.
 \end{abstract}
 
 
@@ -110,9 +112,12 @@ The saturation is currently computed as
 This breaks down if $Q=0$, a value only occuring if the input values are
 $X=Y=Z=0$. When making use of the definition of $M$ and $Q$, one gets to an
 expression for $s$ that is well-defined in all cases:
-\[
-  s \coloneqq 50 \sqrt{\frac{c t^{0.9} {(1.64-0.29)}^{0.73}}{A_w + 4}}.
-\]
+\begin{align}
+  \label{eq:alpha}
+  \alpha&\coloneqq t^{0.9} {(1.64-0.29^n)}^{0.73},\\
+  \nonumber
+  s &\coloneqq 50 \sqrt{\frac{c\alpha}{A_w + 4}}.
+\end{align}
 
 
 \subsection{Steps 2 and 3, backward model}
@@ -175,8 +180,8 @@ It is also clear that they are always well-defined when realizing that
   \neq 0.
 \end{multline*}
 
-The value of $t$ can be retrieved via $\alpha$ from the input variables.
-If the saturation correlate $s$ is given, one has
+The value of $t$ can be retrieved via $\alpha$~\eqref{eq:alpha} from the input
+variables.  If the saturation correlate $s$ is given, one has
 \[
   \alpha \coloneqq {\left(\frac{s}{50}\right)}^2 \frac{A_w+4}{c};
 \]
@@ -464,7 +469,29 @@ the note at the end of the appendix B).  % TODO
 \]
 \end{step}
 
+\begin{table}\centering
+  \begin{tabularx}{\linewidth}{llXX}
+  \toprule
+          & colorio & colorspacious   & color\\
+  \midrule
+    $J$ & \texttt{0.0} & \texttt{3.258e-22} & \texttt{3.258e-22}\\
+    $C$ & \texttt{0.0} & \texttt{4.071e-24} & \texttt{6.222e-24}\\
+    $h$ & \texttt{0.0} & \texttt{0.0}       & \texttt{180.0}\\
+    $Q$ & \texttt{0.0} & \texttt{2.233e-10} & \texttt{2.233e-10}\\
+    $M$ & \texttt{0.0} & \texttt{2.943e-24} & \texttt{4.4986e-24}\\
+    $s$ & \texttt{0.0} & \texttt{1.148e-05} & \texttt{1.4192e-05}\\
+  \bottomrule
+\end{tabularx}
+\caption{CIECAM02 values upon input $X=Y=Z=0$ for different implementations.
+  The exact solution are zeros for every entry.}
+\end{table}
 
+\begin{figure}
+\input{perf.tex}
+  \caption{Performance comparison of the conversion from CIECAM02 to XYZ (using
+  $J$, $C$, and $h$). Making use of the suggested improvments in the backwards model,
+  colorio is about 30\% faster.}
+\end{figure}
 
 % \section{}
 % On Encoding Color Difference Signals for High Dynamic Range and Wide Gamut

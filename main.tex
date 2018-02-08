@@ -52,23 +52,42 @@
 
 \maketitle
 \begin{abstract}
-  The CIECAM02 color appearance model~\cite{ciecam02} has attracted much
-  attention, but it was quickly discovered that it breaks down for certain
-  input values. Some articles have since been published trying to fix the
-  breakdown, most recently 2016~\cite{cam16}. The algorithm still contains some
-  flaws, however. This article suggests some improvements that do not alter the
-  algorithm algebraically, but make it shorter, more efficient, and remove some
-  edge-case breakdowns.
+  This note is concerned with the CIECAM02 color appearence model and its
+  successor, the CAM16 color appearence model. Several flaws are
+  pointed out and remedies are suggested. The resulting color model is algebraically
+  equivalent to CIECAM02/CAM16, but shorter, more efficient, and does not
+  contain edge-case breakdowns.
 \end{abstract}
 
 \section{Introduction}
 
+The CIECAM02 color appearance model~\cite{ciecam02} has attracted much
+attention and was generally thought of as a successor to the ever so popular
+CIELAB color model. However, it was quickly discovered that CIECAM02 breaks
+down for certain input values. A fair number of research articles suggests
+fixes for this behavior, most of them by modifying the first three steps of the
+forward model. Luo and Li themselves give an overview of the suggested
+improvements~\cite{ciecam02-recent}; see references therein.  Most recently,
+again Li and Luo~\cite{cam16} gave their own suggestion on how to best
+circumvent the breakdown~\cite{cam16}. The updated algorithm differs from the
+original CIECAM02 only in the first three steps of the foward model.
+
+While focusing on the first three steps, it appears that that the rest of the
+algorithm has not received much attention over the years. In both CIECAM02 and
+its updated version CAM16, there are some flaws that make the description of
+the algorithm more complicated than necessary, and in edge cases lead to break
+downs once again. The present document describes those flaws and suggests
+improvements (Section~\ref{sec:ff}). The resulting model description
+(Section~\ref{sec:full}) is entirely equivalent to the CIECAM02/CAM16, but is
+simpler -- and hence faster and easier to implement -- and works in all edge
+cases.
 
 
-\section{Suggested improvements}
+\section{Flaws and fixes}\label{sec:ff}
 
-All improvements listed here do not change the outcome of the model.  They are
-merely algorithmic improvements that leads to simplified implementations.
+This section gives the flaws of CIECAM02/CAM16, listed by their steps numbered
+as in CAM16. All steps also appear in the CIECAM02 color appearence model, so
+all flaws and fixes are equally applicable there.
 
 \subsection{Step 3, forward model}
 
@@ -89,10 +108,15 @@ and similarly for the computations of $G_a$ and $B_a$.
 
 If the $\sign$ operator is used here as it is used later in step 5 of the
 backward model, the above description can be shortened.
+
 Furthermore, the term $0.1$ is added here, but in all of the following steps in
-which $\rgb_a$ is used -- except the computation of $t$ in step 9 --, it
-cancels out or is subtracted again. It is hence suggested to include the term
-only in step 9.
+which $R_a$ is used -- except the computation of $t$ in step 9 --, it cancels
+out algebraically.  Unfortunately, said cancellation is not always exact when
+computed in floating point arithmetic. Luckily, the adverse effect of such
+rounding errors is rather limited here. The results will only be distorted for
+very small input values, e.g., $X=Y=Z=0$; see Table~\ref{tab:zero} For matters
+of simplification, it is still suggested to include the term $0.1$ only in
+the computation of $t$ in step 9.
 
 \subsection{Step 9, forward model}
 
@@ -103,9 +127,9 @@ The saturation is currently computed as
     s \coloneqq 100 \sqrt{M/Q}.
   \]
 \end{step}
-This breaks down if $Q=0$, a value only occuring if the input values are
-$X=Y=Z=0$. When making use of the definition of $M$ and $Q$, one gets to an
-expression for $s$ that is well-defined in all cases:
+This expression is not well-defined if $Q=0$, a value only occuring if the
+input values are $X=Y=Z=0$. When making use of the definition of $M$ and $Q$,
+one gets to an expression for $s$ that is well-defined in \emph{all} cases:
 \begin{align}
   \label{eq:alpha}
   \alpha&\coloneqq t^{0.9} {(1.64-0.29^n)}^{0.73},\\
@@ -151,10 +175,11 @@ If $\abs{\cos(h)} > \abs{\sin(h)}$ then
 \end{step}
 
 Some of the complications in this step stem from the fact that the variable $t$
-might be $0$ in the definition of $p_1$. This happens if and only if the input
-parameter $C$ is $0$.
-One can instead perform the computation without explicitly dividing by $t$;
-namely, in the case $\abs{\sin(h)} \ge \abs{\cos(h)}$:
+might be $0$ in the denominator of $p_1$. Likewise, the distinction of cases in $\sin(h)$ and $\cos(h)$ is necessary
+to avoid division by $0$ in $a$ and $b$.
+
+It turns out that both of these problems can be avoided more elegantly.
+Consider, in the case $\abs{\sin(h)} \ge \abs{\cos(h)}$:
 \begin{align*}
   p'_1 &\coloneqq \frac{50000}{13} N_c N_{cb} e_t,\\
   b &= \frac{p_2 (2+p_3) \frac{460}{1403}}{\frac{p'_1}{t\sin(h)} + (2+p_3) \frac{220}{1403} \frac{\cos(h)}{\sin(h)} - \frac{27}{1403} + p_3 \frac{6300}{1403}}\\
@@ -165,30 +190,33 @@ and
 \[
   a = \frac{23 t \cos(h) p_2}{23 p'_1 + 11 t \cos(h) + 108 t \sin(h)}.
 \]
-The exact same expressions are retrieved in the case
-$\abs{\cos(h)} > \abs{\sin(h)}$.
-It is also clear that they are always well-defined when realizing that
+Conveniently, the exact same expressions are retrieved in the case
+$\abs{\cos(h)} > \abs{\sin(h)}$. Those expressions are always well-defined since
 \begin{multline*}
   23 p'_1 + 11 t \cos(h) + 108 t \sin(h)\\
   = \frac{23 p'_1 p_2}{R'_a + G'_a + \tfrac{21}{20}B'_a + 0.305}
   \neq 0.
 \end{multline*}
 
-The value of $t$ can be retrieved via $\alpha$~\eqref{eq:alpha} from the input
-variables.  If the saturation correlate $s$ is given, one has
+In the algorithm, the value of $t$ can be retrieved via
+$\alpha$~\eqref{eq:alpha} from the input variables. Indeed, if the saturation
+correlate $s$ is given, one has
 \[
   \alpha \coloneqq {\left(\frac{s}{50}\right)}^2 \frac{A_w+4}{c};
 \]
-if $M$ is given, compute $C\coloneqq M / F_L^{0.25}$ and then
+if $M$ is given, one can compute $C\coloneqq M / F_L^{0.25}$ and then
 \[
 \alpha\coloneqq\begin{dcases*}
   0 &if $J=0$,\\
   \frac{C}{\sqrt{J/100}}&otherwise.
-\end{dcases*}\]
+\end{dcases*}
+\]
+It is mildly unfortunate that one has to introduce a case distinction for
+$J=0$ here, but this is an operations that can still be performed at reasonable
+efficiency.
 
 
-
-\section{Full model}
+\section{Full model\label{sec:full}}
 
 All steps that differ from the original model are marked with an asterisk (*).
 
@@ -464,20 +492,20 @@ the note at the end of the appendix B).  % TODO
 \end{step}
 
 \begin{table}\centering
-  \begin{tabularx}{\linewidth}{llXX}
+  \begin{tabularx}{\linewidth}{XXX}
   \toprule
-          & colorio & colorspacious   & color\\
+          & colorio & colour~\cite{colour0310}\\
   \midrule
-    $J$ & \texttt{0.0} & \texttt{3.258e-22} & \texttt{3.258e-22}\\
-    $C$ & \texttt{0.0} & \texttt{4.071e-24} & \texttt{6.222e-24}\\
-    $h$ & \texttt{0.0} & \texttt{0.0}       & \texttt{180.0}\\
-    $Q$ & \texttt{0.0} & \texttt{2.233e-10} & \texttt{2.233e-10}\\
-    $M$ & \texttt{0.0} & \texttt{2.943e-24} & \texttt{4.4986e-24}\\
-    $s$ & \texttt{0.0} & \texttt{1.148e-05} & \texttt{1.4192e-05}\\
+    $J$ & \texttt{0.0} & \texttt{3.258e-22}\\
+    $C$ & \texttt{0.0} & \texttt{6.222e-24}\\
+    $h$ & \texttt{0.0} & \texttt{180.0}\\
+    $Q$ & \texttt{0.0} & \texttt{2.233e-10}\\
+    $M$ & \texttt{0.0} & \texttt{4.4986e-24}\\
+    $s$ & \texttt{0.0} & \texttt{1.4192e-05}\\
   \bottomrule
 \end{tabularx}
 \caption{CIECAM02 values upon input $X=Y=Z=0$ for different implementations.
-  The exact solution are zeros for every entry.}
+  The exact solutions are zeros for every entry.}\label{tab:zero}
 \end{table}
 
 \begin{figure}
@@ -486,37 +514,6 @@ the note at the end of the appendix B).  % TODO
   $J$, $C$, and $h$). Making use of the suggested improvments in the backwards model,
   colorio is about 30\% faster.}
 \end{figure}
-
-% \section{}
-% On Encoding Color Difference Signals for High Dynamic Range and Wide Gamut
-% Imagery and derivative articles like Perceptually uniform color space for image
-% signals including high dynamic range and wide gamut:
-%
-% It says there about matrix $M_1$:
-%
-% > For matrix M1 the signal
-% > range for !, ! and ! should remain equal to the range of the input
-% > RGB because the nonlinear conversion function is only defined for
-% > zero to ten thousand. Thus the sum of the coefficients in each row
-% > of matrix !! must equal one.
-%
-% Their final matrix is
-%
-% 0.37613 0.70431 −0.05675
-% −0.21649 1.14744 0.05356
-% 0.02567 0.16713 0.74235
-%
-% However, to assert that the output signal is also in the range of 0 and 10000,
-% there can be no negative entries. This requirement has been forgotten.
-%
-% Proof:
-% If any $M_{i_0, j_0}<0$, then chose
-% $x$ with $x_j={1 if j=j_0, 0 otherwise}$. Then $(Mx)_{i_0} = M_{i_0, j_0} x_j
-% =M_{i_0, j_0} < 0$. Hence, there cannot be negative entries.
-%
-% To maximize entry in $(Mx)_i$, one must choose $x=x_{max} (1,1,1)$. Then
-% $(Mx)_i = \sum_j M_{i, j} x_{max} \le! x_{max}$, hence $\sum_j M_{i, j} \le!
-% 1$, i.e., the sum of each row of $M$ can at most be $1$.
 
 \printbibliography{}
 

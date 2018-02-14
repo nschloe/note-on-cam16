@@ -48,7 +48,7 @@
 \usepackage{bm}
 \newcommand\rgb{\bm{R}}
 
-\title{Some notes on the CIECAM02 and CAM16 color models}
+\title{Algorithmic improvements for the CIECAM02 and CAM16 color appearence models}
 \author{Nico Schlömer}
 
 \begin{document}
@@ -56,10 +56,10 @@
 \maketitle
 \begin{abstract}
   This note is concerned with the CIECAM02 color appearence model and its
-  successor, the CAM16 color appearence model. Several flaws are
-  pointed out and remedies are suggested. The resulting color model is algebraically
-  equivalent to CIECAM02/CAM16, but shorter, more efficient, and does not
-  contain edge-case breakdowns.
+  successor, the CAM16 color appearence model. Several algorithmic flaws are
+  pointed out and remedies are suggested. The resulting color model is
+  algebraically equivalent to CIECAM02/CAM16, but shorter, more efficient, and
+  works correctly for all edge cases.
 \end{abstract}
 
 \section{Introduction}
@@ -68,33 +68,35 @@ The CIECAM02 color appearance model~\cite{ciecam02} has attracted much
 attention and was generally thought of as a successor to the ever so popular
 CIELAB color model. However, it was quickly discovered that CIECAM02 breaks
 down for certain input values. A fair number of research articles suggests
-fixes for this behavior, most of them by modifying the first three steps of the
-forward model. Luo and Li themselves give an overview of the suggested
+fixes for this behavior, most of them by modifying the first steps of the
+forward model. Luo and Li give an overview of the suggested
 improvements~\cite{ciecam02-recent}; see references therein.  Most recently,
-again Li and Luo~\cite{cam16} gave their own suggestion on how to best
+Li and Luo~\cite{cam16} gave their own suggestion on how to best
 circumvent the breakdown~\cite{cam16}. The updated algorithm differs from the
-original CIECAM02 only in the first three steps of the foward model.
+original CIECAM02 only in the first steps of the forward model.
 
-While focusing on the first three steps, it appears that that the rest of the
-algorithm has not received much attention over the years. In both CIECAM02 and
-its updated version CAM16, there are some flaws that make the description of
-the algorithm more complicated than necessary, and in edge cases lead to break
+It appears that that the rest of the algorithm has not received much attention
+over the years. In both CIECAM02 and its updated version CAM16, some of the
+steps are more complicated than necessary, and in edge cases lead to break
 downs once again. The present document describes those flaws and suggests
 improvements (Section~\ref{sec:ff}). The resulting model description
 (Section~\ref{sec:full}) is entirely equivalent to the CIECAM02/CAM16, but is
-simpler -- and hence faster and easier to implement -- and works in all edge
+simpler -- hence faster and easier to implement -- and works in all edge
 cases.
+
+All findings in this article are implemented in the open-source software package
+colorio~\cite{colorio}.
 
 
 \section{Flaws and fixes}\label{sec:ff}
 
-This section gives the flaws of CIECAM02/CAM16, listed by their steps numbered
-as in CAM16. All steps also appear in the CIECAM02 color appearence model, so
-all flaws and fixes are equally applicable there.
+This section describes the flaws of CAM16 and suggests fixes for them. Some of
+them are trivial, others are harder to see. All listed steps also appear in the
+CIECAM02 color appearence model and trivially apply there.
 
 \subsection{Step 3, forward model}
 
-Step 3 of the forward model reads
+The original Step 3 of the forward model reads
 
 \begin{step}[3]
 Calculate the postadaptation cone response
@@ -113,13 +115,35 @@ If the $\sign$ operator is used here as it is used later in step 5 of the
 inverse model, the above description can be shortened.
 
 Furthermore, the term $0.1$ is added here, but in all of the following steps in
-which $R_a$ is used -- except the computation of $t$ in step 9 --, it cancels
+which $R_a$ is used -- except the computation of $t$ in Step 9 --, it cancels
 out algebraically.  Unfortunately, said cancellation is not always exact when
 computed in floating point arithmetic. Luckily, the adverse effect of such
 rounding errors is rather limited here. The results will only be distorted for
-very small input values, e.g., $X=Y=Z=0$; see Table~\ref{tab:zero} For matters
-of simplification, it is still suggested to include the term $0.1$ only in
-the computation of $t$ in step 9.
+very small input values, e.g., $X=Y=Z=0$; see Table~\ref{tab:zero}. For the
+sake of consistency, it is advisable to include the term $0.1$ only in the
+computation of $t$ in Step 9:
+\[
+  R'_a = 400 \sign(R_c) \frac{{\left(\frac{F_L \abs{R_c}}{100}\right)}^{0.42}}{{\left(\frac{F_L \abs{R_c}}{100}\right)}^{0.42} + 27.13}.
+\]
+
+
+\begin{table}\centering
+  \begin{tabularx}{\linewidth}{XXX}
+  \toprule
+          & with fixes & without\\
+  \midrule
+    $J$ & \texttt{0.0} & \texttt{3.258e-22}\\
+    $C$ & \texttt{0.0} & \texttt{4.071e-24}\\
+    $h$ & \texttt{0.0} & \texttt{0.0}\\
+    $Q$ & \texttt{0.0} & \texttt{2.233e-10}\\
+    $M$ & \texttt{0.0} & \texttt{2.943e-24}\\
+    $s$ & \texttt{0.0} & \texttt{1.148e-05}\\
+  \bottomrule
+\end{tabularx}
+\caption{CAM16 values upon input $X=Y=Z=0$ with and without the fixes in
+  this article.  The exact solutions are zeros for every
+  entry.}\label{tab:zero}
+\end{table}
 
 \subsection{Linear combinations, forward model}
 
@@ -142,22 +166,23 @@ multiplication
   \end{pmatrix}
   \begin{pmatrix}
     R'_a\\G'_a\\B'_a
-  \end{pmatrix}.
+  \end{pmatrix}
 \]
+which on many platforms can be computed significantly faster than four
+individual dot-products.
 The last variable $u$ is used in the computation of $t$ in step 9.
 
 
 
 \subsection{Step 9, forward model}
 
-The saturation is currently computed as
 \begin{step}[9]
   Calculate the correlates of [\dots] saturation ($s$).
   \[
     s \coloneqq 100 \sqrt{M/Q}.
   \]
 \end{step}
-This expression is not well-defined if $Q=0$, a value only occuring if the
+This expression is not well-defined if $Q=0$, a value occuring if the
 input values are $X=Y=Z=0$. When making use of the definition of $M$ and $Q$,
 one gets to an expression for $s$ that is well-defined in all cases:
 \begin{align}
@@ -184,9 +209,9 @@ Calculate $t$, $e_t$, $p_1$, $p_2$, and $p_3$.
 \begin{step}[3]
 Calculate $a$ and $b$.
 If $t=0$, then $a=b=0$ and go to Step 4.
-In next computations be transform $h$ from degrees to radians
-before calculating $\sin(h)$ and $\cos(h)$:
-If $\abs{\sin(h)} \ge \abs{\cos(h)}$ then
+In the next computations be sure transform $h$ from degrees to radians before
+calculating $\sin(h)$ and $\cos(h)$: If $\abs{\sin(h)} \ge \abs{\cos(h)}$
+then
 \begin{align*}
   p_4 &= \frac{p_1}{\sin(h)},\\
   b &= \frac{p_2 (2+p_3) \frac{460}{1403}}{p_4 + (2+p_3) \frac{220}{1403} \frac{\cos(h)}{\sin(h)} - \frac{27}{1403} + p_3 \frac{6300}{1403}},\\
@@ -245,57 +270,28 @@ It is mildly unfortunate that one has to introduce a case distinction for
 $J=0$ here, but this is an operation that can still be performed at reasonable
 efficiency.
 
-\section{Effects}
-
-
-\begin{table}\centering
-  \begin{tabularx}{\linewidth}{XXX}
-  \toprule
-          & colorio & colour~\cite{colour0310}\\
-  \midrule
-    $J$ & \texttt{0.0} & \texttt{3.258e-22}\\
-    $C$ & \texttt{0.0} & \texttt{6.222e-24}\\
-    $h$ & \texttt{0.0} & \texttt{180.0}\\
-    $Q$ & \texttt{0.0} & \texttt{2.233e-10}\\
-    $M$ & \texttt{0.0} & \texttt{4.499e-24}\\
-    $s$ & \texttt{0.0} & \texttt{1.419e-05}\\
-  \bottomrule
-\end{tabularx}
-\caption{CIECAM02 values upon input $X=Y=Z=0$ for different implementations.
-  The exact solutions are zeros for every entry.}\label{tab:zero}
-\end{table}
-
 \begin{figure}
 \input{perf.tex}
-  \caption{Performance comparison of the conversion from CIECAM02 to XYZ (with
-  $J$, $C$, and $h$). Making use of the suggested improvments in the inverse
-  model, colorio is more than 30\% faster.}
+  \caption{Performance comparison of the conversion from CAM16 to XYZ (with
+  $J$, $C$, and $h$), implemented in colorio~\cite{colorio}. The suggested
+  improvements in the inverse model lead to a speed-up of about 5\%.}
 \end{figure}
 
 \appendix
 \section{Full model\label{sec:full}}
 
 For the convenience of the reader, both forward and inverse steps of the
-improved CAM16 algorithm are given here.
-The steps that differ from the original model are marked with an asterisk (*).
-As noted above, all improvements carry over to CIECAM02 as well.
+improved CAM16 algorithm are given here. The wording is taken from~\cite{cam16}
+where applicable.
+The steps that differ from the original model are marked with an asterisk~(*).
 
-As an abbreviation, the bold $\rgb$ is used whenever the equation applied
+As an abbreviation, the bold letter $\rgb$ is used whenever the equation applies
 to $R$, $G$, and $B$ alike.
-
-Let $M_{16}$ be given by
-\[
-  M_{16} \coloneqq \begin{pmatrix}
-    0.401288  & 0.650173 & -0.051461\\
-    -0.250268 & 1.204414 & 0.045854\\
-    -0.002079 & 0.048952 & 0.953127
-  \end{pmatrix}.
-\]
 
 \paragraph{Illuminants, viewing surrounds set up and background
 parameters}
-(See the note at the end of Part 2 of Appendix B for determining
-all parameters)
+(See the note at the end of Part 2 of Appendix B of~\cite{cam16} for determining
+all parameters.)
 
 \begin{itemize}
   \item Adopted white in test illuminant: $X_w$, $Y_w$, $Z_w$
@@ -314,11 +310,19 @@ $L_A$ is computed using
 
   \item Surround parameters are given in Table~\ref{tab:surround}:
 To determine the surround conditions see the note at the
-end of Part 1 of Appendix A.
+    end of Part 1 of Appendix A of~\cite{cam16}.
 \item $N_c$ and $F$ are modelled as a function of $c$, and their values
-can be linearly interpolated (see Figure A1), using the above
-points
+  can be linearly interpolated, using the data from~\ref{tab:surround}.
 \end{itemize}
+
+Let $M_{16}$ be given by
+\[
+  M_{16} \coloneqq \begin{pmatrix}
+    0.401288  & 0.650173 & -0.051461\\
+    -0.250268 & 1.204414 & 0.045854\\
+    -0.002079 & 0.048952 & 0.953127
+  \end{pmatrix}.
+\]
 
 \subsection{Forward model}
 
@@ -409,7 +413,7 @@ Calculate the modified postadaptation cone response
 
 \begin{step}[4]
 Calculate Redness--Greenness ($a$), Yellowness--Blueness ($b$) components,
-and hue angle ($h$):
+hue angle ($h$), and auxiliary variables.
 \begin{align*}
   \begin{pmatrix}
     p'_2\\[0.5ex]
@@ -465,23 +469,23 @@ of green and 41\% of blue, which is the $H$c and can be reported as 59G41B or
 \end{step}
 
 \begin{step}[6*]
-Calculate achromatic response $A$
+Calculate the achromatic response
 \[
-  A\coloneqq p'_2 \cdot N_{bb}
+  A\coloneqq p'_2 \cdot N_{bb}.
   \]
 \end{step}
 
 \begin{step}[7]
-Calculate the correlate of lightness $J$
+Calculate the correlate of lightness
 \[
-  J \coloneqq 100 {(A / A_w)}^{cz}
+  J \coloneqq 100 {(A / A_w)}^{cz}.
 \]
 \end{step}
 
 \begin{step}[8]
-  Calculate the correlate of brightness $Q$
+  Calculate the correlate of brightness
   \[
-    Q \coloneqq \frac{4}{c} \sqrt{\frac{J}{100}} (A_w+4) F_L^{0.25}
+    Q \coloneqq \frac{4}{c} \sqrt{\frac{J}{100}} (A_w+4) F_L^{0.25}.
     \]
 \end{step}
 
@@ -500,12 +504,12 @@ Calculate the correlates of chroma ($C$), colorfulness ($M$), and saturation
 \subsection{Inverse model}
 
 \begin{step}[1]
-  Obtain $J$, $C$; and $h$ from $H$, $Q$, $M$, $s$.
+  Obtain $J$, $t$, and $h$ from $H$, $Q$, $C$, $M$, $s$.
 
   The input data can be different combinations of perceived correlates, that
-  is, $J$ or $Q$; $C$, $M$, or $s$; and $H$ or $h$. Hence the following
+  is, $J$ or $Q$; $C$, $M$, or $s$; and $H$ or $h$. Hence, the following
   sub-steps are needed to convert the input parameters to the parameters $J$,
-  $C$, and $h$.
+  $t$, and $h$.
 \end{step}
 
 \begin{step}[1--1]

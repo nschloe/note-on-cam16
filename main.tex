@@ -48,15 +48,15 @@
 \usepackage{bm}
 \newcommand\rgb{\bm{R}}
 
-\title{Algorithmic improvements for the CIECAM02 and CAM16 color appearence models}
+\title{Algorithmic improvements for the CIECAM02 and CAM16 color appearance models}
 \author{Nico Schlömer}
 
 \begin{document}
 
 \maketitle
 \begin{abstract}
-  This note is concerned with the CIECAM02 color appearence model and its
-  successor, the CAM16 color appearence model. Several algorithmic flaws are
+  This note is concerned with the CIECAM02 color appearance model and its
+  successor, the CAM16 color appearance model. Several algorithmic flaws are
   pointed out and remedies are suggested. The resulting color model is
   algebraically equivalent to CIECAM02/CAM16, but shorter, more efficient, and
   works correctly for all edge cases.
@@ -92,7 +92,7 @@ colorio~\cite{colorio}.
 
 This section describes the flaws of CAM16 and suggests fixes for them. Some of
 them are trivial, others are harder to see. All listed steps also appear in the
-CIECAM02 color appearence model and trivially apply there.
+CIECAM02 color appearance model and trivially apply there.
 
 \subsection{Step 3, forward model}
 
@@ -182,7 +182,7 @@ The last variable $u$ is used in the computation of $t$ in step 9.
     s \coloneqq 100 \sqrt{M/Q}.
   \]
 \end{step}
-This expression is not well-defined if $Q=0$, a value occuring if the
+This expression is not well-defined if $Q=0$, a value occurring if the
 input values are $X=Y=Z=0$. When making use of the definition of $M$ and $Q$,
 one gets to an expression for $s$ that is well-defined in all cases:
 \begin{align}

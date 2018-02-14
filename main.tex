@@ -411,9 +411,9 @@ Calculate the modified postadaptation cone response
 \]
 \end{step}
 
-\begin{step}[4]
+\begin{step}[4*]
 Calculate Redness--Greenness ($a$), Yellowness--Blueness ($b$) components,
-hue angle ($h$), and auxiliary variables.
+  hue angle ($h$), and auxiliary variables ($p'_2$, $u$).
 \begin{align*}
   \begin{pmatrix}
     p'_2\\[0.5ex]
@@ -494,7 +494,7 @@ Calculate the correlates of chroma ($C$), colorfulness ($M$), and saturation
   ($s$).
 \begin{align*}
   t&\coloneqq \frac{50000/13 N_c N_{cb} e_t \sqrt{a^2 + b^2}}{u + 0.305},\\
-  \alpha&\coloneqq t^{0.9} \cdot {(1.64 - 0.29^n)}^{0.73},\\
+  \alpha&\coloneqq t^{0.9} {(1.64 - 0.29^n)}^{0.73},\\
   C&\coloneqq \alpha \sqrt{\frac{J}{100}},\\
   M&\coloneqq C\cdot F_L^{0.25},\\
   s &\coloneqq 50 \sqrt{\frac{\alpha c}{A_w + 4}}.
@@ -609,8 +609,8 @@ Calculate $R$, $G$, and $B$ from $R_c$, $G_c$, and $B_c$.
 \end{step}
 
 \begin{step}[7]
-Calculate $X$, $Y$, and $Z$ (for the coefficients of the inverse matrix, see
-the note at the end of the appendix B).  % TODO
+Calculate $X$, $Y$, and $Z$. (For the coefficients of the inverse matrix, see
+the note at the end of the appendix B of~\cite{cam16}.)
 \[
 \begin{pmatrix}X\\Y\\Z\end{pmatrix}
   = M_{16}^{-1}

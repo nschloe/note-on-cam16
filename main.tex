@@ -1,5 +1,7 @@
 \documentclass[twocolumn]{scrartcl}
 
+\usepackage[utf8]{inputenc}
+
 % Step environment
 % <https://tex.stackexchange.com/a/12943/13262>
 \usepackage{amsthm}
@@ -19,7 +21,16 @@
 
 \usepackage{siunitx}
 
-\usepackage{hyperref}
+\newcommand\mytitle{Algorithmic improvements for the CIECAM02 and CAM16 color appearance models}
+\newcommand\myauthor{Nico Schlömer}
+
+\usepackage[
+  pdfencoding=unicode,
+  ]{hyperref}
+\hypersetup{
+  pdfauthor={\myauthor},
+  pdftitle={\mytitle}
+}
 
 % <https://tex.stackexchange.com/a/43009/13262>
 \DeclarePairedDelimiter\abs{\lvert}{\rvert}%
@@ -50,8 +61,8 @@
 \usepackage{bm}
 \newcommand\rgb{\bm{R}}
 
-\title{Algorithmic improvements for the CIECAM02 and CAM16 color appearance models}
-\author{Nico Schlömer}
+\title{\mytitle}
+\author{\myauthor}
 
 \begin{document}
 

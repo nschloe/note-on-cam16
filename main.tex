@@ -19,6 +19,8 @@
 
 \usepackage{siunitx}
 
+\usepackage{hyperref}
+
 % <https://tex.stackexchange.com/a/43009/13262>
 \DeclarePairedDelimiter\abs{\lvert}{\rvert}%
 
@@ -29,16 +31,16 @@
 % degree symbol
 \usepackage{gensymb}
 
-% <https://tex.stackexchange.com/a/413899/13262>
-\usepackage{etoolbox}
-\makeatletter
-\long\def\etb@listitem#1#2{%
-  \expandafter\ifblank\expandafter{\@gobble#2}
-    {}
-    {\expandafter\etb@listitem@i
-     \expandafter{\@secondoftwo#2}{#1}}}
-\long\def\etb@listitem@i#1#2{#2{#1}}
-\makeatother
+% % <https://tex.stackexchange.com/a/413899/13262>
+% \usepackage{etoolbox}
+% \makeatletter
+% \long\def\etb@listitem#1#2{%
+%   \expandafter\ifblank\expandafter{\@gobble#2}
+%     {}
+%     {\expandafter\etb@listitem@i
+%      \expandafter{\@secondoftwo#2}{#1}}}
+% \long\def\etb@listitem@i#1#2{#2{#1}}
+% \makeatother
 \usepackage[sorting=none]{biblatex}
 \bibliography{bib}
 

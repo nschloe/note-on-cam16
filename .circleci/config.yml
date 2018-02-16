@@ -8,7 +8,7 @@ jobs:
       - image: ubuntu:16.04
     steps:
       - run: apt update
-      - run: apt install -y texlive
+      - run: apt install -y texlive make
       - checkout
       - run: make
       - run: biber main

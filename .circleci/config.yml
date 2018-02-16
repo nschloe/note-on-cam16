@@ -8,9 +8,8 @@ jobs:
       - image: ubuntu:18.04
     steps:
       - run: apt update
-      # <https://serverfault.com/a/84528>
-      - run: echo "Europe/Berlin" > /etc/timezone
-      - run: dpkg-reconfigure -f noninteractive tzdata
+      # <https://stackoverflow.com/a/44333806/353337>
+      - run: DEBIAN_FRONTEND=noninteractive apt install tzdata
       - run: apt install -y make texlive-luatex texlive-science texlive-fonts-extra texlive-bibtex-extra biber
       - checkout
       - run: make

@@ -1,0 +1,15 @@
+version: 2
+
+jobs:
+
+  build:
+    working_directory: ~/note
+    docker:
+      - image: ubuntu:16.04
+    steps:
+      - run: apt-get update
+      - run: apt-get install texlive
+      - checkout
+      - run: make
+      - run: biber main
+      - run: make

@@ -10,7 +10,7 @@ jobs:
       - run: apt update
       # <https://stackoverflow.com/a/44333806/353337>
       - run: DEBIAN_FRONTEND=noninteractive apt install tzdata
-      - run: apt install -y make texlive-luatex texlive-science texlive-fonts-extra texlive-bibtex-extra biber
+      - run: apt install -y make texlive-luatex texlive-science texlive-fonts-extra texlive-bibtex-extra biber qpdf
       - checkout
       - run: make
       - run: biber main

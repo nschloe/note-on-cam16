@@ -10,6 +10,7 @@ jobs:
       - run: apt update
       # <https://serverfault.com/a/84528>
       - run: echo "Europe/Berlin" > /etc/timezone
+      - run: dpkg-reconfigure -f noninteractive tzdata
       - run: apt install -y make texlive-luatex texlive-science texlive-fonts-extra texlive-bibtex-extra biber
       - checkout
       - run: make

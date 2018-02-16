@@ -55,8 +55,16 @@
 %      \expandafter{\@secondoftwo#2}{#1}}}
 % \long\def\etb@listitem@i#1#2{#2{#1}}
 % \makeatother
-\usepackage[sorting=none]{biblatex}
-\bibliography{bib}
+
+% Okay. Don't use biblatex/biber for now. There are breaking changes in every
+% revision, and we'd have to stick to the exact version that arxiv.org has,
+% otherwise it's error messages like
+% ```
+% Package biblatex Warning: File 'main.bbl' is wrong format version
+% - expected 2.8.
+% ```
+% \usepackage[sorting=none]{biblatex}
+% \bibliography{bib}
 
 \usepackage{amsmath}
 \DeclareMathOperator{\sign}{sign}
@@ -634,6 +642,8 @@ the note at the end of the appendix B of~\cite{cam16}.)
 \]
 \end{step}
 
-\printbibliography{}
+% \printbibliography{}
+\bibliography{bib}{}
+\bibliographystyle{plain}
 
 \end{document}

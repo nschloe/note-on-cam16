@@ -23,24 +23,11 @@ main:
 
 .PHONY: clean
 
-arxiv:
-	mkdir "$(ARXIV_DIR)"
-	cp Makefile \
-	   abstract.tex \
-	   algorithm.tex \
-	   conclusions.tex \
-	   discretization.tex \
-	   header.tex \
-	   introduction.tex \
-	   main.tex \
-	   numerical-methods.tex \
-	   numerical-results.tex \
-	   main.bbl \
-	   "$(ARXIV_DIR)"
-
 clean:
 	@rm -f $(TARGET)-blx.bib \
 	       $(TARGET).aux \
+	       $(TARGET).tex.bak \
+	       $(TARGET).run.xml \
 	       $(TARGET).out \
 	       $(TARGET).auxlock \
 	       $(TARGET).bbl \
@@ -53,7 +40,8 @@ clean:
 	       $(TARGET).snm \
 	       $(TARGET).spl \
 	       $(TARGET)-figure*.spl \
-	       $(TARGET).nav
+	       $(TARGET).nav \
+	       $(TARGET).bcf
 	@rm -f missfont.log \
 	       x.log
 	@rm -f revision.tex

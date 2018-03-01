@@ -1,5 +1,7 @@
 # Algorithmic improvements for the CIECAM02 and CAM16 color appearance models
 
+This article is available on https://arxiv.org/abs/1802.06067.
+
 Compile the LaTeX document with
 ```
 make
